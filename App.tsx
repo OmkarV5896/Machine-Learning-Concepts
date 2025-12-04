@@ -8,6 +8,8 @@ import { TopicCard } from './components/TopicCard';
 import { DifficultySelect } from './components/DifficultySelect';
 import { GameInterface } from './components/GameInterface';
 import { ChatTutor } from './components/ChatTutor';
+import { AcademyMenu } from './components/AcademyMenu';
+import { AcademyViews } from './components/AcademyViews';
 
 export default function App() {
   const [phase, setPhase] = useState<GamePhase>(GamePhase.MENU);
@@ -17,13 +19,18 @@ export default function App() {
   const [currentMission, setCurrentMission] = useState<Mission | null>(null);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [loadingError, setLoadingError] = useState<string | null>(null);
+  
+  // Academy State
+  const [academyModuleId, setAcademyModuleId] = useState<string | null>(null);
 
   // Initialize tutor when topic changes
   useEffect(() => {
     if (selectedTopic) {
       initializeTutorChat(selectedTopic.name);
+    } else if (phase === GamePhase.ACADEMY) {
+      initializeTutorChat("Machine Learning Fundamentals");
     }
-  }, [selectedTopic]);
+  }, [selectedTopic, phase]);
 
   const handleTopicSelect = (topic: Topic) => {
     setSelectedTopic(topic);
@@ -73,9 +80,9 @@ export default function App() {
   const handleExit = () => {
     setPhase(GamePhase.MENU);
     setSelectedTopic(null);
-    // Do not reset stats completely if we want persistence, but for now we reset session
     setStats(INITIAL_STATS);
     setIsChatOpen(false);
+    setAcademyModuleId(null);
   };
 
   return (
@@ -117,7 +124,7 @@ export default function App() {
                 </div>
               )}
               
-              {phase === GamePhase.PLAYING && (
+              {(phase === GamePhase.PLAYING || phase === GamePhase.ACADEMY) && (
                 <button
                   onClick={() => setIsChatOpen(true)}
                   className="flex items-center gap-2 px-3 py-1.5 bg-indigo-600/10 hover:bg-indigo-600/20 border border-indigo-500/30 rounded text-indigo-300 text-xs font-mono transition-colors"
@@ -131,19 +138,30 @@ export default function App() {
         </nav>
 
         {/* Main Content */}
-        <main className="flex-1 max-w-7xl mx-auto px-6 py-8 w-full">
+        <main className="flex-1 max-w-7xl mx-auto w-full">
           {phase === GamePhase.MENU && (
-            <div className="space-y-8 animate-in fade-in duration-700 pt-10">
+            <div className="px-6 py-8 space-y-8 animate-in fade-in duration-700 pt-10">
               <div className="text-center max-w-3xl mx-auto mb-16">
                 <div className="inline-block px-3 py-1 mb-4 rounded-full bg-slate-900 border border-slate-700 text-xs font-mono text-indigo-400">
-                  SYSTEM VERSION 3.0 // ARCHITECT SIMULATION
+                  SYSTEM VERSION 3.1 // ACADEMY ONLINE
                 </div>
                 <h1 className="text-5xl md:text-6xl font-bold mb-6 tracking-tight text-white">
                   Build the Intelligence
                 </h1>
-                <p className="text-slate-400 text-lg md:text-xl leading-relaxed max-w-2xl mx-auto">
-                  Select a domain. Filter data signals from noise. Architect the model. Watch it learn in real-time.
+                <p className="text-slate-400 text-lg md:text-xl leading-relaxed max-w-2xl mx-auto mb-8">
+                  Select a domain to start a mission, or enter the Academy to master the core concepts interactively.
                 </p>
+                
+                <div className="flex justify-center gap-4">
+                   <button 
+                     onClick={() => setPhase(GamePhase.ACADEMY)}
+                     className="px-8 py-4 bg-slate-800 hover:bg-slate-700 text-white rounded-xl font-bold border border-slate-700 flex items-center gap-3 transition-all hover:-translate-y-1 shadow-lg"
+                   >
+                     <Icons.Academy className="w-5 h-5 text-indigo-400" />
+                     ENTER ACADEMY
+                   </button>
+                </div>
+
                 {loadingError && (
                    <div className="mt-8 p-4 bg-red-950/30 border border-red-500/30 text-red-300 rounded-lg text-sm font-mono">
                      ERROR: {loadingError}
@@ -151,6 +169,7 @@ export default function App() {
                 )}
               </div>
 
+              <h3 className="text-xl font-bold text-white px-2 mb-4 border-b border-slate-800 pb-2">Active Contracts</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {TOPICS.map((topic) => (
                   <TopicCard 
@@ -163,11 +182,27 @@ export default function App() {
             </div>
           )}
 
-          {phase === GamePhase.DIFFICULTY_SELECT && (
-            <DifficultySelect 
-              onSelect={handleDifficultySelect}
+          {phase === GamePhase.ACADEMY && !academyModuleId && (
+            <AcademyMenu 
+              onSelect={(id) => setAcademyModuleId(id)} 
               onBack={() => setPhase(GamePhase.MENU)}
             />
+          )}
+
+          {phase === GamePhase.ACADEMY && academyModuleId && (
+            <AcademyViews 
+              moduleId={academyModuleId}
+              onExit={() => setAcademyModuleId(null)}
+            />
+          )}
+
+          {phase === GamePhase.DIFFICULTY_SELECT && (
+            <div className="px-6 py-8">
+              <DifficultySelect 
+                onSelect={handleDifficultySelect}
+                onBack={() => setPhase(GamePhase.MENU)}
+              />
+            </div>
           )}
 
           {phase === GamePhase.LOADING_LEVEL && (
@@ -187,7 +222,7 @@ export default function App() {
           )}
 
           {phase === GamePhase.PLAYING && currentMission && (
-            <div className="animate-in slide-in-from-right-4 duration-500">
+            <div className="px-6 py-8 animate-in slide-in-from-right-4 duration-500">
               <GameInterface 
                 scenario={currentMission}
                 currentDifficulty={selectedDifficulty}
@@ -204,7 +239,7 @@ export default function App() {
       <ChatTutor 
         isOpen={isChatOpen} 
         onClose={() => setIsChatOpen(false)}
-        currentTopic={selectedTopic?.name || ''}
+        currentTopic={phase === GamePhase.ACADEMY ? (academyModuleId ? `Interactive Lab: ${academyModuleId}` : 'Academy') : (selectedTopic?.name || '')}
       />
     </div>
   );

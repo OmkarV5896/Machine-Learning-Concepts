@@ -34,7 +34,11 @@ import {
   Crown,
   Medal,
   Shield,
-  ArrowLeft
+  ArrowLeft,
+  GraduationCap,
+  TrendingDown,
+  Waves,
+  MousePointer
 } from 'lucide-react';
 
 export const Icons = {
@@ -71,7 +75,11 @@ export const Icons = {
   Crown,
   Medal,
   Shield,
-  ArrowLeft
+  ArrowLeft,
+  Academy: GraduationCap,
+  Descent: TrendingDown,
+  Fit: Waves,
+  Click: MousePointer
 };
 
 export type IconName = keyof typeof Icons;
